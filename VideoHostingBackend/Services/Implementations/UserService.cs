@@ -34,7 +34,9 @@ public class UserService : IUserService
             Credentials = new()
             {
                 Password = PasswordHasher.HashPassword(password)
-            }
+            },
+            Avatar = RandomStringGenerator.GenerateName() + ".png",
+            BackgroundImage = RandomStringGenerator.GenerateName() + ".png"
         };
 
         await _context.AddAsync(user);
@@ -52,8 +54,8 @@ public class UserService : IUserService
         if (user is null)
         {
             return null;
-        }    
-        
+        }
+
         var expectedHash = PasswordHasher.HashPassword(password);
 
         return expectedHash == user.Credentials?.Password ? user : null;

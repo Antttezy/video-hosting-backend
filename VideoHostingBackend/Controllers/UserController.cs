@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Security.Principal;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,12 +16,15 @@ public class UserController : ControllerBase
     private readonly IUserService _userService;
     private readonly ITokenGenerator _tokenGenerator;
     private readonly IMapper _mapper;
+    private readonly IFileUploadService _fileUploadService;
 
-    public UserController(IUserService userService, ITokenGenerator tokenGenerator, IMapper mapper)
+    public UserController(IUserService userService, ITokenGenerator tokenGenerator, IMapper mapper,
+        IFileUploadService fileUploadService)
     {
         _userService = userService;
         _tokenGenerator = tokenGenerator;
         _mapper = mapper;
+        _fileUploadService = fileUploadService;
     }
 
     [HttpPost("signup")]
@@ -113,5 +117,77 @@ public class UserController : ControllerBase
             HttpContext.Response.StatusCode = 400;
             return null;
         }
+    }
+
+    [HttpPost]
+    [Authorize]
+    [Route("/api/user/setAvatar")]
+    public async Task<ActionResult<UserDto?>> SetAvatar([FromForm] FileDto avatar)
+    {
+        UserData? user = await GetUser(User.Identity);
+
+        if (user is null)
+        {
+            return Error("Error: User not found");
+        }
+
+        try
+        {
+            await _fileUploadService.UploadImage(avatar.File, user.Avatar);
+            return _mapper.Map<UserDto>(user);
+        }
+        catch (Exception)
+        {
+            return Error("Error while uploading photo");
+        }
+    }
+
+    [HttpPost]
+    [Authorize]
+    [Route("/api/user/setBackground")]
+    public async Task<ActionResult<UserDto?>> SetBackground([FromForm] FileDto background)
+    {
+        UserData? user = await GetUser(User.Identity);
+
+        if (user is null)
+        {
+            return Error("Error: User not found");
+        }
+
+        try
+        {
+            await _fileUploadService.UploadImage(background.File, user.BackgroundImage);
+            return _mapper.Map<UserDto>(user);
+        }
+        catch (Exception)
+        {
+            return Error("Error while uploading photo");
+        }
+    }
+
+    private async Task<UserData?> GetUser(IIdentity? identity)
+    {
+        if (identity is not ClaimsIdentity claimsIdentity)
+        {
+            return null;
+        }
+
+        Claim? claim = claimsIdentity.Claims.FirstOrDefault(c => c.Type == "Id");
+
+        if (claim is null)
+        {
+            return null;
+        }
+
+        var id = int.Parse(claim.Value);
+        return await _userService.GetById(id);
+    }
+
+    private BadRequestObjectResult Error(string message)
+    {
+        return BadRequest(new
+        {
+            Error = message
+        });
     }
 }
