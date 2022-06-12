@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:13.6-alpine
+    ports:
+      - "8002:5432"
+    volumes:
+      - "./pgdata:/var/lib/postgresql/data/pgdata"
+    environment:
+      POSTGRES_DB: "VideoContext"
+      POSTGRES_USER: "VideoContext"
+      POSTGRES_PASSWORD: "password"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+
+  backend:
+    build: .
+    ports:
+      - "8001:80"
+    volumes:
+      - "./VideoHostingBackend/wwwroot:/app/wwwroot"
+    restart: on-failure
+    depends_on:
+      - postgres
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
