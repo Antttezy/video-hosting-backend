@@ -70,4 +70,18 @@ public class UserService : IUserService
             .Include(u => u.Credentials)
             .FirstOrDefaultAsync(u => u.Id == id);
     }
+
+    public async Task<UserData?> SetUserData(UserData newData)
+    {
+        try
+        {
+            _context.Update(newData);
+            await _context.SaveChangesAsync();
+            return newData;
+        }
+        catch (DbUpdateException)
+        {
+            return null;
+        }
+    }
 }

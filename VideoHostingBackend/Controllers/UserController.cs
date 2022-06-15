@@ -118,6 +118,28 @@ public class UserController : ControllerBase
             return null;
         }
     }
+    
+    [HttpPost]
+    [Authorize]
+    [Route("/api/user")]
+    public async Task<ActionResult<UserDto?>> SetUserData([FromBody] UserDataDto userData)
+    {
+        UserData? user = await GetUser(User.Identity);
+
+        if (user is null)
+        {
+            return Error("Error: User not found");
+        }
+
+        UserData? newData = await _userService.SetUserData(user);
+
+        if (newData is null)
+        {
+            return Error("Error: User not updated");
+        }
+
+        return _mapper.Map<UserDto>(newData);
+    }
 
     [HttpPost]
     [Authorize]
