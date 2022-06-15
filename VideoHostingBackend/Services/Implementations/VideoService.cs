@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VideoHostingBackend.Core.Models;
+using VideoHostingBackend.Core.Models.DataTransfer;
 using VideoHostingBackend.Core.Services;
 using VideoHostingBackend.Data;
 using VideoHostingBackend.Util;
@@ -75,5 +76,26 @@ internal class VideoService : IVideoService
         }
 
         return video;
+    }
+
+    public async Task<Comment?> AddComment(Video video, string text, UserData author)
+    {
+        Comment comment = new()
+        {
+            Text = text,
+            UserId = author.Id,
+            VideoId = video.Id
+        };
+
+        try
+        {
+            await _context.Comments.AddAsync(comment);
+            await _context.SaveChangesAsync();
+            return comment;
+        }
+        catch (DbUpdateException)
+        {
+            return null;
+        }
     }
 }
